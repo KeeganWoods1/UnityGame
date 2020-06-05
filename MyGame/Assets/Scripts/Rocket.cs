@@ -19,13 +19,16 @@ public class Rocket : MonoBehaviour
     [SerializeField] ParticleSystem levelFinishedParticles;
     [SerializeField] ParticleSystem deathParticles;
 
+    [SerializeField] int nextScene;
+
     Rigidbody rigidBody;
     AudioSource audioSource;
 
     enum State { Alive, Dying, Transcending }
     State state = State.Alive;
 
-    [SerializeField] int nextScene;
+    private bool collisionsAreEnabled = true;
+
 
     // Start is called before the first frame update
     void Start()
@@ -37,16 +40,21 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (state == State.Alive)
+        if ( state == State.Alive )
         {
             RespondToThrustInput();
             RespondToRotateInput();
+        }
+
+        if (Debug.isDebugBuild)
+        {
+            RespondToDebugKeys();
         }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (state != State.Alive) { return; }
+        if (state != State.Alive || !collisionsAreEnabled) { return; }
 
         switch (collision.gameObject.tag)
         {
@@ -78,8 +86,8 @@ public class Rocket : MonoBehaviour
     }
 
     private void ApplyThrust()
-    {
-        rigidBody.AddRelativeForce(Vector3.up * vertThrust);
+    {  
+        rigidBody.AddRelativeForce(Vector3.up * vertThrust * Time.deltaTime); // Multiplied by deltaTime for framerate independence
 
         if (!audioSource.isPlaying)
         {
@@ -94,12 +102,12 @@ public class Rocket : MonoBehaviour
 
         if (Input.GetKey(KeyCode.A))
         {
-            transform.Rotate(Vector3.forward * rcsThrust);
+            transform.Rotate(Vector3.forward * rcsThrust * Time.deltaTime);
         } 
 
         else if (Input.GetKey(KeyCode.D))
         {
-            transform.Rotate(-Vector3.forward * rcsThrust);
+            transform.Rotate(-Vector3.forward * rcsThrust * Time.deltaTime);
         }
 
         rigidBody.freezeRotation = false;
@@ -121,7 +129,7 @@ public class Rocket : MonoBehaviour
         audioSource.Stop();
         audioSource.PlayOneShot(explosion);
         deathParticles.Play();
-        Invoke("LoadFirstScene", levelLoadDelay);
+        Invoke("ReloadCurrentScene", levelLoadDelay);
     }
 
     private void LoadFirstScene()
@@ -131,6 +139,39 @@ public class Rocket : MonoBehaviour
 
     private void LoadNextScene()
     {
-        SceneManager.LoadScene(nextScene);
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        int sceneCount = SceneManager.sceneCountInBuildSettings;
+        int nextSceneIndex = (currentSceneIndex + 1) % sceneCount;
+
+        SceneManager.LoadScene(nextSceneIndex);
+    }
+
+    private void ReloadCurrentScene()
+    {
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+
+        SceneManager.LoadScene(currentSceneIndex);
+    }
+
+    private void RespondToDebugKeys()
+    {
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            LoadNextScene();
+        }
+
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            if (collisionsAreEnabled)
+            {
+                print("invincible, you cannot be 'vinced");
+                collisionsAreEnabled = false;
+            }
+            else
+            {
+                print("You are mortal again");
+                collisionsAreEnabled = true;
+            }
+        }
     }
 }
