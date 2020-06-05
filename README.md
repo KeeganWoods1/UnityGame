@@ -3,4 +3,4 @@ Unity, C# project created for the purpose of learning, practicing and or testing
 
 Try the game here:
 
-https://sharemygame.com/@Rusty/~3eaaccb7-f90a-7b12-48dc-220205554720
+https://sharemygame.com/@Rusty/ufo
